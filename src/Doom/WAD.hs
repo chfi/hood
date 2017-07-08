@@ -9,13 +9,10 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as C
 import qualified Data.Binary as Bin
 
-import Doom.WAD.Types (WADType(..), Header(..), DirEntry(..), Lump, Directory)
+import Doom.WAD.Types (WADType(..), Header(..), DirEntry(..), LumpData(..), Directory)
 -- see https://zdoom.org/wiki/WAD
 -- and http://doom.wikia.com/wiki/WAD
 
-
-parse32BitInt :: Parser Int
-parse32BitInt = (readMay . show) <$> take 4 >>= maybe mzero pure
 
 parseWord32 :: Parser Word32
 parseWord32 = do
@@ -24,25 +21,24 @@ parseWord32 = do
     Left _ -> mzero
     Right (_,_,c)  -> pure c
 
+
 parseHeader :: Parser Header
 parseHeader = Header
-  -- 0x00-0x03: "IWAD" or "PWAD"
-  <$> ((string "IWAD" >> pure IWAD) <|> (string "PWAD" >> pure PWAD))
-  -- 0x04-0x07: number of lumps
-  <*> parseWord32
-  -- 0x08-0x0b: pointer to directory
-  <*> parseWord32
+  <$> ((string "IWAD" >> pure IWAD) <|> (string "PWAD" >> pure PWAD)
+       <?> "when reading WAD type")
+  <*> (parseWord32 <?> "when reading number of lumps")
+  <*> (parseWord32 <?> "when reading directory offset")
 
 
 parseDirEntry :: Parser DirEntry
 parseDirEntry = DirEntry
-  <$> parseWord32
-  <*> parseWord32
-  <*> (pack . C.unpack <$> take 8)
+  <$> (parseWord32 <?> "when reading lump offset")
+  <*> (parseWord32 <?> "when reading lump size")
+  <*> (pack . C.unpack <$> take 8 <?> "when reading lump name")
 
 
 parseDirectory :: Parser Directory
-parseDirectory = (many parseDirEntry) <* endOfInput
+parseDirectory = fromList <$> many parseDirEntry <* endOfInput
 
 
 -- | takes the whole WAD and a directory entry,
