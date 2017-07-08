@@ -4,24 +4,20 @@ module Doom.UI.Lump
 import ClassyPrelude
 
 import Graphics.Vty.Attributes (defAttr)
-import Graphics.Vty.Image (text', string, vertCat)
+import Graphics.Vty.Image (text', vertCat)
 import qualified Graphics.Vty as V
 
 import Doom.WAD.Types (Header(..), Directory, DirEntry(..), LumpData(..))
 import qualified Doom.WAD as WAD
-
 import Control.Lens
 import Numeric (showHex)
-import Data.Text (chunksOf, strip)
 import Data.List (unfoldr)
-
 import qualified Brick.Main as M
 import qualified Brick.Types as T
 import qualified Brick.Widgets.Border as B
 import qualified Brick.Widgets.List as L
 import qualified Brick.Widgets.Center as C
 import qualified Brick.AttrMap as A
--- import qualified Data.Vector as Vec
 import Brick.Types
   ( Widget(..)
   , Size(..)
@@ -42,9 +38,6 @@ import Brick.Widgets.Core
   )
 import qualified Brick.Widgets.Core as BC
 import Brick.Util (fg, on)
-
--- customAttr :: A.AttrName
--- customAttr = L.listSelectedAttr <> "custom"
 
 
 -- Draw lump information (name + size)
@@ -99,11 +92,6 @@ lumpPreview bs mde = prev
 drawUI :: ByteString -> Maybe DirEntry -> Widget ()
 drawUI bs mde = ui
   where ui = B.border $ lumpInfo mde <=> lumpPreview bs mde
-
-
-
--- bstohex :: ByteString -> SVector String
--- bstohex = (fmap (showHex)) . toByteVector
 
 
 handleEvent :: L.List () DirEntry -> T.BrickEvent () e -> T.EventM () (T.Next (L.List () DirEntry))

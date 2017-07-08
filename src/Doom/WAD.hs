@@ -46,8 +46,6 @@ parseDirectory = fromList <$> many parseDirEntry <* endOfInput
 loadLump :: ByteString -> DirEntry -> (Text, ByteString)
 loadLump bs d = (name d, BS.take (fromIntegral $ size d) $ BS.drop (fromIntegral $ entryPtr d) bs)
 
-
-
 indexLump :: ByteString -> DirEntry -> LumpData
 indexLump bs de = Verbatim $ BS.take (fromIntegral $ size de) $ drop (fromIntegral $ entryPtr de) bs
 

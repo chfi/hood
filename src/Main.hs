@@ -6,14 +6,9 @@ import ClassyPrelude hiding (take)
 import Graphics.Vty.Attributes (defAttr)
 import qualified Graphics.Vty as V
 import Data.Attoparsec.ByteString.Lazy (parseOnly)
-import Options.Applicative hiding (str)
-
+import Options.Applicative
 import qualified Doom.WAD as WAD
 import Doom.WAD.Types (Header(..), Directory, DirEntry(..))
-
-import Control.Lens
-import Numeric (showHex)
-
 import qualified Brick.Main as M
 import qualified Brick.Types as T
 import qualified Brick.Widgets.Border as B
@@ -49,16 +44,10 @@ optsParser = info (helper <*> opts)
               strArgument (metavar "FILENAME" <> help "path to WAD to parse"))
 
 
--- customAttr :: A.AttrName
--- customAttr = L.listSelectedAttr <> "custom"
-
-
-
 appDraw :: ByteString -> L.List () DirEntry -> [Widget ()]
 appDraw bs l = [ui]
   where ui = (UI.Directory.drawUI l) <+> (UI.Lump.drawUI bs de)
         de = snd <$> L.listSelectedElement l
-
 
 
 appEvent :: L.List () DirEntry -> T.BrickEvent () e -> T.EventM () (T.Next (L.List () DirEntry))
@@ -86,7 +75,6 @@ main = do
   case result of
     Left err -> print err
     Right (hd, dir) -> do
-
 
       let app = M.App { M.appDraw = appDraw bs
                       , M.appChooseCursor = M.showFirstCursor
