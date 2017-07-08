@@ -16,27 +16,27 @@ data Header = Header { wadtype :: WADType
 
 
 data LumpData  = Verbatim ByteString
-               | Map ByteString
-               | THINGS ByteString
-               | LINEDEFS ByteString
-               | SIDEDEFS ByteString
-               | VERTEXES ByteString
-               | SEGS ByteString
-               | SUBSECTORS ByteString
-               | NODES ByteString
-               | SECTORS ByteString
-               | REJECT ByteString
-               | BLOCKMAP ByteString
-               | FLATS ByteString
-               | SPRITES ByteString
-               | PATCHES ByteString
-               | PLAYPAL ByteString
-               | COLORMAP ByteString
-               | ENDOOM ByteString
-               | TEXTURE1 ByteString
-               | TEXTURE2 ByteString
-               | PNAMES ByteString
-               | DEMO ByteString
+               -- | Map ByteString
+               -- | THINGS ByteString
+               -- | LINEDEFS ByteString
+               -- | SIDEDEFS ByteString
+               -- | VERTEXES ByteString
+               -- | SEGS ByteString
+               -- | SUBSECTORS ByteString
+               -- | NODES ByteString
+               -- | SECTORS ByteString
+               -- | REJECT ByteString
+               -- | BLOCKMAP ByteString
+               -- | FLATS ByteString
+               -- | SPRITES ByteString
+               -- | PATCHES ByteString
+               -- | PLAYPAL ByteString
+               -- | COLORMAP ByteString
+               -- | ENDOOM ByteString
+               -- | TEXTURE1 ByteString
+               -- | TEXTURE2 ByteString
+               -- | PNAMES ByteString
+               -- | DEMO ByteString
 
 
 

@@ -4,14 +4,16 @@ module Doom.UI.Lump
 import ClassyPrelude
 
 import Graphics.Vty.Attributes (defAttr)
-import Graphics.Vty.Image (text', string)
+import Graphics.Vty.Image (text', string, vertCat)
 import qualified Graphics.Vty as V
 
-import Doom.WAD.Types (Header(..), Directory, DirEntry(..))
+import Doom.WAD.Types (Header(..), Directory, DirEntry(..), LumpData(..))
+import qualified Doom.WAD as WAD
 
 import Control.Lens
 import Numeric (showHex)
-import Data.Text (chunksOf)
+import Data.Text (chunksOf, strip)
+import Data.List (unfoldr)
 
 import qualified Brick.Main as M
 import qualified Brick.Types as T
@@ -57,35 +59,46 @@ lumpInfo mde = info
         posW  = txt $ "Pos:  0x" <> (pack $ lumpPos "")
 
 
-bstohex :: ByteString -> Text
-bstohex bs = (ofoldMap (\x -> pack $ (showHex x) " ")) $ toByteVector bs
+showHex' :: (Show t, Integral t) => t -> String
+showHex' x = if length hex < 2 then "0" <> hex else hex
+  where hex = showHex x ""
 
-drawData :: ByteString -> Widget ()
-drawData bs = Widget Greedy Greedy $ do
+bstohex :: ByteString -> [Text]
+bstohex bs = (ofoldMap (\x -> [pack $ showHex' x])) $ toByteVector bs
+
+drawData :: LumpData -> Widget ()
+drawData (Verbatim bs) = BC.padLeft (T.Pad 1) $ Widget Greedy Greedy $ do
   ctx <- getContext
   let a = ctx ^. attrL
       w = ctx ^. availWidthL
       h = ctx ^. availHeightL
-      -- break the hex into `w` long lines
-      hex = chunksOf w $ bstohex bs
-  return $ Result (text' a hex) [] [] []
+      lineW = w `div` 3
+      ls = unfoldr (\chunks ->
+                      let (line , rest) = splitAt lineW chunks
+                      -- in Just (text' a $ concat line , rest)) $ bstohex bs
+                      in Just (text' a $ intercalate " " line , rest)) $ bstohex bs
+  return $ Result (vertCat (take h ls)) [] [] []
 
 
 
 -- Preview lump (if applicable)
 -- should really be Maybe Lump -> Widget ();
 -- i.e. the Lump is the data itself
-lumpPreview :: Maybe DirEntry -> Widget ()
-lumpPreview mde = prev
+
+lumpPreview :: ByteString -> Maybe DirEntry -> Widget ()
+lumpPreview bs mde = prev
   where prev = B.borderWithLabel (txt "Lump preview") $ C.center lumpData
         -- lumpData = txt $ tshow $ concat $ take 1000 $ repeat "0"
-        lumpData = drawData (concat $ take 1000 $ repeat "0")
+        lumpData = drawData $ lump
+        lump = case mde of
+          Nothing -> Verbatim ""
+          Just de -> WAD.indexLump bs de
 
 -- Putting it together
 -- drawUI :: L.List () DirEntry -> [Widget ()]
-drawUI :: Maybe DirEntry -> Widget ()
-drawUI mde = ui
-  where ui = B.border $ lumpInfo mde <=> lumpPreview mde
+drawUI :: ByteString -> Maybe DirEntry -> Widget ()
+drawUI bs mde = ui
+  where ui = B.border $ lumpInfo mde <=> lumpPreview bs mde
 
 
 

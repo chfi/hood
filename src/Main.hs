@@ -54,9 +54,9 @@ optsParser = info (helper <*> opts)
 
 
 
-appDraw :: L.List () DirEntry -> [Widget ()]
-appDraw l = [ui]
-  where ui = (UI.Directory.drawUI l) <+> (UI.Lump.drawUI de)
+appDraw :: ByteString -> L.List () DirEntry -> [Widget ()]
+appDraw bs l = [ui]
+  where ui = (UI.Directory.drawUI l) <+> (UI.Lump.drawUI bs de)
         de = snd <$> L.listSelectedElement l
 
 
@@ -88,7 +88,7 @@ main = do
     Right (hd, dir) -> do
 
 
-      let app = M.App { M.appDraw = appDraw
+      let app = M.App { M.appDraw = appDraw bs
                       , M.appChooseCursor = M.showFirstCursor
                       , M.appHandleEvent = appEvent
                       , M.appStartEvent = return
