@@ -7,6 +7,7 @@ import Graphics.Vty.Attributes (defAttr)
 import Graphics.Vty.Image (text', vertCat)
 import qualified Graphics.Vty as V
 
+import Data.Attoparsec.ByteString.Lazy (parseOnly)
 import Doom.WAD.Types (Header(..), Directory, DirEntry(..), LumpData(..))
 import qualified Doom.WAD as WAD
 import Control.Lens
@@ -72,6 +73,19 @@ drawData (Verbatim bs) = BC.padLeft (T.Pad 1) $ Widget Greedy Greedy $ do
                       in Just (text' a $ intercalate " " line , rest)) $ bstohex bs
   return $ Result (vertCat (take h ls)) [] [] []
 
+drawData (VERTEXES vs) = BC.padLeft (T.Pad 1) $ Widget Greedy Greedy $ do
+  ctx <- getContext
+  let a = ctx ^. attrL
+      w = ctx ^. availWidthL
+      h = ctx ^. availHeightL
+      ls = text' a . tshow <$> toList vs
+      -- lineW = w `div` 3
+      -- ls = unfoldr (\chunks ->
+                      -- let (line , rest) = splitAt lineW chunks
+                      -- in Just (text' a $ concat line , rest)) $ bstohex bs
+                      -- in Just (text' a $ intercalate " " line , rest)) $ bstohex bs
+  return $ Result (vertCat (take h ls)) [] [] []
+
 
 
 -- Preview lump (if applicable)
@@ -85,7 +99,10 @@ lumpPreview bs mde = prev
         lumpData = drawData $ lump
         lump = case mde of
           Nothing -> Verbatim ""
-          Just de -> WAD.indexLump bs de
+          Just de -> let bs' = WAD.lumpSubstring bs de
+                     in case parseOnly (WAD.getParser de) bs' of
+                          Left err -> Verbatim "Error parsing lump!"
+                          Right ld -> ld
 
 -- Putting it together
 -- drawUI :: L.List () DirEntry -> [Widget ()]
