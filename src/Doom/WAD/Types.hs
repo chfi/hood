@@ -1,6 +1,8 @@
 module Doom.WAD.Types where
 
 import ClassyPrelude
+import Data.Word (Word16)
+import Linear.V2 (V2(..))
 
 data WADType = IWAD | PWAD deriving (Eq, Show, Read)
 
@@ -15,18 +17,20 @@ data Header = Header { wadtype :: WADType
                      } deriving (Eq, Show)
 
 
+type Vertex = V2 Word16
+
 data LumpData  = Verbatim ByteString
-               -- | Map ByteString
-               -- | THINGS ByteString
-               -- | LINEDEFS ByteString
-               -- | SIDEDEFS ByteString
-               -- | VERTEXES ByteString
-               -- | SEGS ByteString
-               -- | SUBSECTORS ByteString
-               -- | NODES ByteString
-               -- | SECTORS ByteString
-               -- | REJECT ByteString
-               -- | BLOCKMAP ByteString
+               | Map ByteString
+               | THINGS ByteString
+               | LINEDEFS ByteString
+               | SIDEDEFS ByteString
+               | VERTEXES (SVector Vertex)
+               | SEGS ByteString
+               | SUBSECTORS ByteString
+               | NODES ByteString
+               | SECTORS ByteString
+               | REJECT ByteString
+               | BLOCKMAP ByteString
                -- | FLATS ByteString
                -- | SPRITES ByteString
                -- | PATCHES ByteString
@@ -37,13 +41,12 @@ data LumpData  = Verbatim ByteString
                -- | TEXTURE2 ByteString
                -- | PNAMES ByteString
                -- | DEMO ByteString
-
+               deriving (Eq, Ord, Show)
 
 
 data DirEntry = DirEntry { entryPtr :: Word32
                          , size :: Word32
                          , name :: Text
                          } deriving (Eq, Show)
-
 
 type Directory = Vector DirEntry

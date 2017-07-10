@@ -3,13 +3,14 @@ module Doom.WAD where
 import ClassyPrelude hiding (take)
 
 import Data.Attoparsec.ByteString.Lazy
-import Data.Word (Word32)
+import Data.Word (Word16, Word32)
+import Linear.V2 (V2(..))
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as C
 import qualified Data.Binary as Bin
 
-import Doom.WAD.Types (WADType(..), Header(..), DirEntry(..), LumpData(..), Directory)
+import Doom.WAD.Types (WADType(..), Header(..), DirEntry(..), LumpData(..), Directory, Vertex)
 -- see https://zdoom.org/wiki/WAD
 -- and http://doom.wikia.com/wiki/WAD
 
@@ -21,11 +22,18 @@ parseWord32 = do
     Left _ -> mzero
     Right (_,_,c)  -> pure c
 
+parseWord16 :: Parser Word16
+parseWord16 = do
+  bytes <- Bin.decodeOrFail . reverse . LBS.fromStrict <$> take 2
+  case bytes of
+    Left _ -> mzero
+    Right (_,_,c)  -> pure c
 
 parseHeader :: Parser Header
 parseHeader = Header
-  <$> ((string "IWAD" >> pure IWAD) <|> (string "PWAD" >> pure PWAD)
-       <?> "when reading WAD type")
+  <$> ((string "IWAD" >> pure IWAD) <|>
+       (string "PWAD" >> pure PWAD)
+        <?> "when reading WAD type")
   <*> (parseWord32 <?> "when reading number of lumps")
   <*> (parseWord32 <?> "when reading directory offset")
 
@@ -46,9 +54,26 @@ parseDirectory = fromList <$> many parseDirEntry <* endOfInput
 loadLump :: ByteString -> DirEntry -> (Text, ByteString)
 loadLump bs d = (name d, BS.take (fromIntegral $ size d) $ BS.drop (fromIntegral $ entryPtr d) bs)
 
-indexLump :: ByteString -> DirEntry -> LumpData
-indexLump bs de = Verbatim $ BS.take (fromIntegral $ size de) $ drop (fromIntegral $ entryPtr de) bs
+lumpSubstring :: ByteString -> DirEntry -> ByteString
+lumpSubstring bs de =  BS.take (fromIntegral $ size de) $ drop (fromIntegral $ entryPtr de) bs
 
+parseVertex :: Parser Vertex
+parseVertex = V2 <$> parseWord16 <*> parseWord16
+
+parseVerbatim :: Parser LumpData
+parseVerbatim = Verbatim <$> takeByteString
+
+-- parseTHINGS :: Parser LumpData
+-- parseTHINGS = THINGS <$> takeByteString
+
+parseVERTEXES :: Parser LumpData
+parseVERTEXES = (VERTEXES . fromList) <$> many parseVertex <* endOfInput
+
+
+getParser :: DirEntry -> Parser LumpData
+getParser de = case name de of
+  "VERTEXES" -> parseVERTEXES
+  _ -> parseVerbatim
 
 {- TODO
 read Header
