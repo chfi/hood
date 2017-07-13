@@ -50,7 +50,6 @@ runApp vs = do
 
       let vs' = transformMapVertexes vs
 
-      traverse_ print (take 30 $ drop 600 vs')
       _ <- generateVertexArray
       vBuffer <- bindBuffer vs'
 

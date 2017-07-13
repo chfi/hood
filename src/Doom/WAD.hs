@@ -75,6 +75,13 @@ getParser de = case name de of
   "VERTEXES" -> parseVERTEXES
   _ -> parseVerbatim
 
+
+parseWAD :: ByteString -> [DirEntry] -> [Either String LumpData]
+parseWAD bs dir = --fmap (parseOnly (getParser dir)) (lumpSubstring bs <$> dir)
+  let f de = parseOnly (getParser de) (lumpSubstring bs de)
+  in fmap f dir
+
+
 {- TODO
 read Header
 print Header
