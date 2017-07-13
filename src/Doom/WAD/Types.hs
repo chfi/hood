@@ -1,6 +1,7 @@
 module Doom.WAD.Types where
 
 import ClassyPrelude
+import Data.Int (Int16)
 import Data.Word (Word16)
 import Linear.V2 (V2(..))
 
@@ -17,12 +18,17 @@ data Header = Header { wadtype :: WADType
                      } deriving (Eq, Show)
 
 
-type Vertex = V2 Word16
+type Vertex = V2 Int16
+
+-- TODO there's more to linedefs than this
+data Linedef = Linedef { startVertex :: Word16
+                       , endVertex :: Word16
+                       } deriving (Eq, Ord, Show)
 
 data LumpData  = Verbatim ByteString
                | Map ByteString
                | THINGS ByteString
-               | LINEDEFS ByteString
+               | LINEDEFS (Vector Linedef)
                | SIDEDEFS ByteString
                | VERTEXES (SVector Vertex)
                | SEGS ByteString
@@ -50,3 +56,9 @@ data DirEntry = DirEntry { entryPtr :: Word32
                          } deriving (Eq, Show)
 
 type Directory = Vector DirEntry
+
+
+data DoomMap = DoomMap { title :: Text
+                       , vertexes :: SVector Vertex
+                       , linedefs :: Vector Linedef
+                       } deriving (Eq, Ord, Show)

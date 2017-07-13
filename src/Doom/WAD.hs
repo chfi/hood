@@ -1,16 +1,16 @@
 module Doom.WAD where
 
 import ClassyPrelude hiding (take)
-
 import Data.Attoparsec.ByteString.Lazy
 import Data.Word (Word16, Word32)
+import Data.Int (Int16)
 import Linear.V2 (V2(..))
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as C
 import qualified Data.Binary as Bin
 
-import Doom.WAD.Types (WADType(..), Header(..), DirEntry(..), LumpData(..), Directory, Vertex)
+import Doom.WAD.Types
 -- see https://zdoom.org/wiki/WAD
 -- and http://doom.wikia.com/wiki/WAD
 
@@ -24,6 +24,13 @@ parseWord32 = do
 
 parseWord16 :: Parser Word16
 parseWord16 = do
+  bytes <- Bin.decodeOrFail . reverse . LBS.fromStrict <$> take 2
+  case bytes of
+    Left _ -> mzero
+    Right (_,_,c)  -> pure c
+
+parseInt16 :: Parser Int16
+parseInt16 = do
   bytes <- Bin.decodeOrFail . reverse . LBS.fromStrict <$> take 2
   case bytes of
     Left _ -> mzero
@@ -57,12 +64,14 @@ loadLump bs d = (name d, BS.take (fromIntegral $ size d) $ BS.drop (fromIntegral
 lumpSubstring :: ByteString -> DirEntry -> ByteString
 lumpSubstring bs de =  BS.take (fromIntegral $ size de) $ drop (fromIntegral $ entryPtr de) bs
 
-parseVertex :: Parser Vertex
-parseVertex = V2 <$> parseWord16 <*> parseWord16
-
 parseVerbatim :: Parser LumpData
 parseVerbatim = Verbatim <$> takeByteString
 
+parseVertex :: Parser Vertex
+parseVertex = V2 <$> parseInt16 <*> parseInt16
+
+parseLinedef :: Parser Linedef
+parseLinedef = Linedef <$> parseWord16 <*> parseWord16
 -- parseTHINGS :: Parser LumpData
 -- parseTHINGS = THINGS <$> takeByteString
 
@@ -70,9 +79,14 @@ parseVERTEXES :: Parser LumpData
 parseVERTEXES = (VERTEXES . fromList) <$> many parseVertex <* endOfInput
 
 
+parseLINEDEFS :: Parser LumpData
+parseLINEDEFS = (LINEDEFS . fromList) <$> many parseLinedef <* endOfInput
+
+
 getParser :: DirEntry -> Parser LumpData
 getParser de = case name de of
   "VERTEXES" -> parseVERTEXES
+  "LINEDEFS" -> parseLINEDEFS
   _ -> parseVerbatim
 
 
@@ -80,6 +94,41 @@ parseWAD :: ByteString -> [DirEntry] -> [Either String LumpData]
 parseWAD bs dir = --fmap (parseOnly (getParser dir)) (lumpSubstring bs <$> dir)
   let f de = parseOnly (getParser de) (lumpSubstring bs de)
   in fmap f dir
+
+-- test = (!)
+
+parseMap :: ByteString -> [DirEntry] -> Maybe (DoomMap, [DirEntry])
+parseMap bs de = do
+  title <- index de 0
+  things <- index de 1
+  linedefs <- index de 2
+  sidedefs <- index de 3
+  vertexes <- index de 4
+  segs <- index de 5
+  ssectors <- index de 6
+  nodes <- index de 7
+  sectors <- index de 8
+  reject <- index de 9
+  blockmap <- index de 10
+
+  parsedVertexes <- case parseOnly (many parseVertex <* endOfInput) (lumpSubstring bs vertexes) of
+    Left _ -> Nothing
+    Right vs -> Just vs
+
+  parsedLinedefs <- case parseOnly (many parseLinedef <* endOfInput) (lumpSubstring bs linedefs) of
+    Left _ -> Nothing
+    Right vs -> Just vs
+
+  let dmap = DoomMap (name title) (fromList parsedVertexes) (fromList parsedLinedefs)
+  pure (dmap, drop 11 de)
+
+-- parseMaps :: ByteString -> [DirEntry] -> [DoomMap]
+parseMaps :: ByteString -> [DirEntry] -> [DoomMap]
+parseMaps bs des = case parseMap bs des of
+  Nothing -> []
+  Just (m,des') -> m:(parseMaps bs des')
+-- lumpToMap :: [LumpData] -> M
+-- lumpToMap
 
 
 {- TODO
