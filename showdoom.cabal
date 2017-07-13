@@ -37,6 +37,9 @@ library
                      , linear               >= 1.20.6  && < 1.21
 
 executable showdoom
+  other-modules:       Graphics.Doom
+                     , Graphics.Shader
+                     , Graphics.Buffer
   default-language:    Haskell2010
   default-extensions:  NoImplicitPrelude
                      , OverloadedStrings
@@ -53,3 +56,11 @@ executable showdoom
                      , vty                  >= 5.15    && < 5.16
                      , optparse-applicative >= 0.13.2  && < 0.14
                      , attoparsec           >= 0.13.1  && < 0.14
+                     , gl                   >= 0.8.0   && < 0.9
+                     , GLFW-b               >= 1.4.8.1 && < 1.5
+                     , JuicyPixels          >= 3.2.8.2 && < 3.3
+                     -- , vector
+                     , lens                 >= 4.15.1  && < 4.16
+                     -- , random
+                     , bytestring           >= 0.10.8  && < 0.11
+                     , linear               >= 1.20.6  && < 1.21
