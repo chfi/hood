@@ -8,6 +8,7 @@ import qualified Graphics.Vty as V
 import Data.Attoparsec.ByteString.Lazy (parseOnly)
 import Options.Applicative
 import qualified Doom.WAD as WAD
+import Doom.Map (RawMap(..), DoomMap(..))
 import Doom.WAD.Types (Header(..), Directory, DirEntry(..), LumpData(..))
 import qualified Brick.Main as M
 import qualified Brick.Types as T
@@ -105,18 +106,22 @@ main = do
                       }
           initialState = (BytesPreview, L.list () dir 1)
           parsed = WAD.parseWAD bs (toList dir)
-          vs' = find (\x -> case x of
-                         Right (VERTEXES _) -> True
-                         _ -> False) parsed
+          maps = WAD.parseMaps bs (toList dir)
+
+      traverse_ (\RawMap{..} -> putStrLn rawName) maps
+
+          -- vs' = find (\x -> case x of
+          --                Right (VERTEXES _) -> True
+          --                _ -> False) parsed
           -- vs :: SVector (V2 Word16)
           -- vs = fromList [V2 1088 61856, V2 1024 61856, V2 1024 61888]
           -- vs = fromList [V2 1088 61856, V2 1024 61856, V2 1024 61888, V2 1088 61888, V2 1152 61888, V2 960 61888, V2 1280 61984, V2 832 61984, V2 1344 61984, V2 704 61984, V2 896 62144, V2 928 62144, V2 928 62176, V2 896 62176]
-          vs = case vs' of
-            Just (Right (VERTEXES x)) -> x
-            _ -> fromList [V2 30000 30000, V2 (-2000) (-2000), V2 3000 0]
+          -- vs = case vs' of
+          --   Just (Right (VERTEXES x)) -> x
+          --   _ -> fromList [V2 30000 30000, V2 (-2000) (-2000), V2 3000 0]
 
-      _ <- when (runGL args) $ do
-        putStrLn "Launching OpenGL"
-        Gfx.runApp vs
+      -- _ <- when (runGL args) $ do
+      --   putStrLn "Launching OpenGL"
+      --   Gfx.runApp vs
 
-      void $ M.defaultMain app initialState
+      -- void $ M.defaultMain app initialState

@@ -21,14 +21,37 @@ data Header = Header { wadtype :: WADType
 type Vertex = V2 Int16
 
 -- TODO there's more to linedefs than this
-data Linedef = Linedef { startVertex :: Word16
-                       , endVertex :: Word16
-                       } deriving (Eq, Ord, Show)
+-- data Linedef = Linedef { startVertex :: Word16
+--                        , endVertex :: Word16
+--                        } deriving (Eq, Ord, Show)
+
+data Linedef v sd = Linedef { startVertex :: v
+                            , endVertex :: v
+                            , flags :: Word16
+                            , rightSidedef :: sd
+                            , leftSidedef :: sd
+                            } deriving (Eq, Ord, Show)
+
+data Sidedef sec = Sidedef { xOffset :: Word16
+                           , yOffset :: Word16
+                           , upperTexture :: Text
+                           , lowerTexture :: Text
+                           , middleTexture :: Text
+                           , sector :: sec
+                           } deriving (Eq, Ord, Show)
+
+data Sector = Sector { floorHeight :: Word16
+                     , ceilingHeight :: Word16
+                     , floorTexture :: Text
+                     , ceilingTexture :: Text
+                     , lightLevel :: Word16
+                     , sectorType :: Word16
+                     } deriving (Eq, Ord, Show)
 
 data LumpData  = Verbatim ByteString
                | Map ByteString
                | THINGS ByteString
-               | LINEDEFS (Vector Linedef)
+               | LINEDEFS (Vector (Linedef Word16 Word16))
                | SIDEDEFS ByteString
                | VERTEXES (SVector Vertex)
                | SEGS ByteString
@@ -58,7 +81,10 @@ data DirEntry = DirEntry { entryPtr :: Word32
 type Directory = Vector DirEntry
 
 
-data DoomMap = DoomMap { title :: Text
-                       , vertexes :: SVector Vertex
-                       , linedefs :: Vector Linedef
-                       } deriving (Eq, Ord, Show)
+
+
+
+-- data DoomMap = DoomMap { title :: Text
+--                        , vertexes :: SVector Vertex
+--                        , linedefs :: Vector Linedef
+--                        } deriving (Eq, Ord, Show)

@@ -1,7 +1,9 @@
 module Doom.WAD where
 
 import ClassyPrelude hiding (take)
+-- import Data.Attoparsec.ByteString.Lazy (Parser, parseOnly, many, endOfInput)
 import Data.Attoparsec.ByteString.Lazy
+import qualified Data.Attoparsec.ByteString.Lazy as AL
 import Data.Word (Word16, Word32)
 import Data.Int (Int16)
 import Linear.V2 (V2(..))
@@ -9,8 +11,17 @@ import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as C
 import qualified Data.Binary as Bin
+import qualified Data.Text as T
+import qualified Data.List as List
+-- import Data.Text.Encoding (decodeUtf8)
+
+import qualified Data.Vector as Vec
+
+import Control.Error (hush)
+
 
 import Doom.WAD.Types
+import Doom.Map
 -- see https://zdoom.org/wiki/WAD
 -- and http://doom.wikia.com/wiki/WAD
 
@@ -70,10 +81,40 @@ parseVerbatim = Verbatim <$> takeByteString
 parseVertex :: Parser Vertex
 parseVertex = V2 <$> parseInt16 <*> parseInt16
 
-parseLinedef :: Parser Linedef
-parseLinedef = Linedef <$> parseWord16 <*> parseWord16
--- parseTHINGS :: Parser LumpData
--- parseTHINGS = THINGS <$> takeByteString
+parseLinedef :: Parser (Linedef Word16 Word16)
+parseLinedef = do
+  sv <- parseWord16
+  ev <- parseWord16
+  flags <- parseWord16
+  parseWord16
+  parseWord16
+  rsd <- parseWord16
+  lsd <- parseWord16
+  pure $ Linedef sv ev flags rsd lsd
+
+
+parseSidedef :: Parser (Sidedef Word16)
+parseSidedef = do
+  x <- parseWord16
+  y <- parseWord16
+  ut <- (decodeUtf8 <$> take 8)
+  lt <- (decodeUtf8 <$> take 8)
+  mt <- (decodeUtf8 <$> take 8)
+  sec <- parseWord16
+  pure $ Sidedef x y ut lt mt sec
+
+
+parseSector :: Parser Sector
+parseSector = do
+  fh <- parseWord16
+  ch <- parseWord16
+  ft <- (decodeUtf8 <$> take 8)
+  ct <- (decodeUtf8 <$> take 8)
+  ll <- parseWord16
+  t <- parseWord16
+  parseWord16
+  pure $ Sector fh ch ft ct ll t
+
 
 parseVERTEXES :: Parser LumpData
 parseVERTEXES = (VERTEXES . fromList) <$> many parseVertex <* endOfInput
@@ -95,62 +136,38 @@ parseWAD bs dir = --fmap (parseOnly (getParser dir)) (lumpSubstring bs <$> dir)
   let f de = parseOnly (getParser de) (lumpSubstring bs de)
   in fmap f dir
 
+dropTilMap :: [DirEntry] -> [DirEntry]
+dropTilMap dir = dropWhile (\de -> not $ isMap $ name de) dir
+  where isMap x = isDoom1 x || isDoom2 x
+        isDoom1 x = (T.toLower x `index` 0 == Just 'e' &&)
+                    (T.toLower x `index` 2 == Just 'm')
+        isDoom2 x = "map" `T.isPrefixOf` T.toLower x
+
+
 -- test = (!)
 
-parseMap :: ByteString -> [DirEntry] -> Maybe (DoomMap, [DirEntry])
-parseMap bs de = do
-  title <- index de 0
-  things <- index de 1
-  linedefs <- index de 2
-  sidedefs <- index de 3
-  vertexes <- index de 4
-  segs <- index de 5
-  ssectors <- index de 6
-  nodes <- index de 7
-  sectors <- index de 8
-  reject <- index de 9
-  blockmap <- index de 10
+parseRawMap :: ByteString -> [DirEntry] -> Maybe (RawMap, [DirEntry])
+parseRawMap wad dir = do
+  title <- index dir 0
+  linedefs <- index dir 2
+  sidedefs <- index dir 3
+  vertexes <- index dir 4
+  sectors <- index dir 8
 
-  parsedVertexes <- case parseOnly (many parseVertex <* endOfInput) (lumpSubstring bs vertexes) of
-    Left _ -> Nothing
-    Right vs -> Just vs
+  let getLump = lumpSubstring wad
+      parse ps = many ps <* endOfInput
 
-  parsedLinedefs <- case parseOnly (many parseLinedef <* endOfInput) (lumpSubstring bs linedefs) of
-    Left _ -> Nothing
-    Right vs -> Just vs
+  parsedVs <- hush $ parseOnly (parse parseVertex) (getLump vertexes)
+  parsedLds <- hush $ parseOnly (parse parseLinedef) (getLump linedefs)
+  parsedSds <- hush $ parseOnly (parse parseSidedef) (getLump sidedefs)
+  parsedSecs <- hush $ parseOnly (parse parseSector) (getLump sectors)
 
-  let dmap = DoomMap (name title) (fromList parsedVertexes) (fromList parsedLinedefs)
-  pure (dmap, drop 11 de)
+  let rawMap = RawMap (name title) (Vec.fromList parsedVs)
+                                   (Vec.fromList parsedLds)
+                                   (Vec.fromList parsedSds)
+                                   (Vec.fromList parsedSecs)
 
--- parseMaps :: ByteString -> [DirEntry] -> [DoomMap]
-parseMaps :: ByteString -> [DirEntry] -> [DoomMap]
-parseMaps bs des = case parseMap bs des of
-  Nothing -> []
-  Just (m,des') -> m:(parseMaps bs des')
--- lumpToMap :: [LumpData] -> M
--- lumpToMap
+  pure $ (rawMap, drop 11 dir)
 
-
-{- TODO
-read Header
-print Header
-read Directory & populate list of DirEntrys
-Create UI for scrolling through the list of DirEntrys
-Then go for all the special cases:
-+ Maps
-+ Flats
-+ Sprites
-+ Patches
-Specific names:
-+ PLAYPAL
-+ COLORMAP
-+ ENDOOM
-+ TEXTURE1, TEXTURE2, PNAMES
-
-
-Perhaps with calling out to other programs to open and view them?
-(That's when we'd go for an actual GUI)
-(Or just open an OpenGL window... hm)
-
-Maybe editing text?!
--}
+parseMaps :: ByteString -> [DirEntry] -> [RawMap]
+parseMaps wad de = List.unfoldr (parseRawMap wad) (dropTilMap de)
