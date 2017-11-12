@@ -13,18 +13,27 @@ import Graphics.Buffer
 import Linear.V2 (V2(..))
 
 import qualified Graphics.UI.GLFW as GLFW
-
-transformMapVertexes :: (Storable a, Integral a) => SVector (V2 a) -> [GLfloat]
-transformMapVertexes v = foldr
-  (\(V2 x y) vs ->
-      let x' = (fromIntegral (x - 32768)) / 65536
-          y' = (fromIntegral (y - 32768)) / 65536
-          z' = 1.0
-      in x':y':z':vs) [] (toList v)
+import Doom.WAD.Types
+import Doom.Map
 
 
-runApp :: (Storable a, Integral a) => SVector (V2 a) -> IO ()
-runApp vs = do
+linedefLine :: V2 Float
+            -> GLfloat
+            -> Linedef (V2 Float) (Maybe (Sidedef Sector))
+            -> [GLfloat]
+linedefLine offset scale Linedef{..} =
+  let (V2 x1 y1) = (offset + startVertex) * pure scale
+      (V2 x2 y2) = (offset + endVertex) * pure scale
+      z = 1.0 * scale
+  in [x1, y1, z, x2, y2, z]
+
+renderableVs :: V2 Float -> GLfloat -> DoomMap -> [GLfloat]
+renderableVs offset scale DoomMap{..} = foldMap (linedefLine offset scale) (toList linedefs)
+
+
+-- runApp :: (Storable a, Integral a) => SVector (V2 a) -> IO ()
+runApp :: DoomMap -> IO ()
+runApp dm = do
   inited <- GLFW.init
   when (not inited) (die "Error in glfwInit")
 
@@ -48,7 +57,7 @@ runApp vs = do
 
       programId <- loadShaders "shaders/map_vertexes.vert" "shaders/map_vertexes.frag"
 
-      let vs' = transformMapVertexes vs
+      let vs' = renderableVs (V2 (-2400) (2000)) (1/4000) dm
 
       _ <- generateVertexArray
       vBuffer <- bindBuffer vs'

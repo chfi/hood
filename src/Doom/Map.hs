@@ -42,7 +42,7 @@ data RawMap = RawMap { rawName :: Text
 
 
 data DoomMap = DoomMap { mapName :: Text
-                       , linedefs :: Vector (Linedef (V2 Double) (Maybe (Sidedef Sector)))
+                       , linedefs :: Vector (Linedef (V2 Float) (Maybe (Sidedef Sector)))
                        } deriving (Eq, Ord, Show)
 
 buildSidedef :: Vector Sector -> Sidedef SectorNumber -> Maybe (Sidedef Sector)
@@ -51,10 +51,9 @@ buildSidedef secs sd@Sidedef{..} = case secs `index` fromIntegral sector of
   Just sec -> Just sd { sector = sec }
 
 buildLinedef :: Vector Vertex
-             -- -> Vector Sector
              -> Vector (Sidedef Sector)
              -> Linedef VertexNumber SidedefNumber
-             -> Maybe (Linedef (V2 Double) (Maybe (Sidedef Sector)))
+             -> Maybe (Linedef (V2 Float) (Maybe (Sidedef Sector)))
 buildLinedef verts sdefs ld@Linedef{..} = do
   sv <- verts `index` fromIntegral startVertex
   ev <- verts `index` fromIntegral endVertex
