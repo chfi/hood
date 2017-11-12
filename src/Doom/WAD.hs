@@ -1,7 +1,6 @@
 module Doom.WAD where
 
 import ClassyPrelude hiding (take)
--- import Data.Attoparsec.ByteString.Lazy (Parser, parseOnly, many, endOfInput)
 import Data.Attoparsec.ByteString.Lazy
 import qualified Data.Attoparsec.ByteString.Lazy as AL
 import Data.Word (Word16, Word32)
@@ -13,7 +12,6 @@ import qualified Data.ByteString.Char8 as C
 import qualified Data.Binary as Bin
 import qualified Data.Text as T
 import qualified Data.List as List
--- import Data.Text.Encoding (decodeUtf8)
 
 import qualified Data.Vector as Vec
 
@@ -136,6 +134,7 @@ parseWAD bs dir = --fmap (parseOnly (getParser dir)) (lumpSubstring bs <$> dir)
   let f de = parseOnly (getParser de) (lumpSubstring bs de)
   in fmap f dir
 
+
 dropTilMap :: [DirEntry] -> [DirEntry]
 dropTilMap dir = dropWhile (\de -> not $ isMap $ name de) dir
   where isMap x = isDoom1 x || isDoom2 x
@@ -143,8 +142,6 @@ dropTilMap dir = dropWhile (\de -> not $ isMap $ name de) dir
                     (T.toLower x `index` 2 == Just 'm')
         isDoom2 x = "map" `T.isPrefixOf` T.toLower x
 
-
--- test = (!)
 
 parseRawMap :: ByteString -> [DirEntry] -> Maybe (RawMap, [DirEntry])
 parseRawMap wad dir = do

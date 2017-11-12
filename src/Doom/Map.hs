@@ -4,7 +4,7 @@ import ClassyPrelude
 
 import Data.Int (Int16)
 import Data.Word (Word16)
--- import Data.Vector ((!?))
+import qualified Data.Vector as Vec
 import Linear.V2 (V2(..))
 import Doom.WAD.Types
 
@@ -32,20 +32,17 @@ type VertexNumber = Word16
 type SidedefNumber = Word16
 type SectorNumber = Word16
 
--- buildMap :: Vector
 
 data RawMap = RawMap { rawName :: Text
                      , rawVertexes :: Vector Vertex
                      , rawLinedefs :: Vector (Linedef VertexNumber SidedefNumber)
                      , rawSidedefs :: Vector (Sidedef SectorNumber)
-                     , rawSector :: Vector Sector
+                     , rawSectors :: Vector Sector
                      } deriving (Eq, Ord, Show)
 
--- type RawDoomMap = ( Vector (V2 Int16)
---                   , Vector (Linedef (V2 Word16) (Word16
 
 data DoomMap = DoomMap { mapName :: Text
-                       , linedefs :: Vector (Linedef (V2 Double) (Sidedef Sector))
+                       , linedefs :: Vector (Linedef (V2 Double) (Maybe (Sidedef Sector)))
                        } deriving (Eq, Ord, Show)
 
 buildSidedef :: Vector Sector -> Sidedef SectorNumber -> Maybe (Sidedef Sector)
@@ -54,22 +51,25 @@ buildSidedef secs sd@Sidedef{..} = case secs `index` fromIntegral sector of
   Just sec -> Just sd { sector = sec }
 
 buildLinedef :: Vector Vertex
+             -- -> Vector Sector
              -> Vector (Sidedef Sector)
              -> Linedef VertexNumber SidedefNumber
-             -> Maybe (Linedef Vertex (Sidedef Sector))
+             -> Maybe (Linedef (V2 Double) (Maybe (Sidedef Sector)))
 buildLinedef verts sdefs ld@Linedef{..} = do
   sv <- verts `index` fromIntegral startVertex
   ev <- verts `index` fromIntegral endVertex
-  rsd <- sdefs `index` fromIntegral rightSidedef
-  lsd <- sdefs `index` fromIntegral leftSidedef
-  pure $ ld { startVertex = sv
-            , endVertex = ev
+  let rsd = sdefs `index` fromIntegral rightSidedef
+      lsd = sdefs `index` fromIntegral leftSidedef
+
+  pure $ ld { startVertex = fromIntegral <$> sv
+            , endVertex = fromIntegral <$> ev
             , rightSidedef = rsd
             , leftSidedef = lsd
             }
 
--- buildLinedef :: Linedef WADOffset WADOffset -> Linedef
 
--- buildMap :: ByteString -> RawMap -> DoomMap
--- buildMap wad RawMap{..} = undefined
---   where name' = decodeUtf8 name
+buildMap :: RawMap -> Maybe DoomMap
+buildMap RawMap{..} = do
+  sidedefs <- sequence $ Vec.map (buildSidedef rawSectors) rawSidedefs
+  ldefs <- sequence $ Vec.map (buildLinedef rawVertexes sidedefs) rawLinedefs
+  pure $ DoomMap rawName ldefs
