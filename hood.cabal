@@ -2,9 +2,9 @@
 --
 -- see: https://github.com/sol/hpack
 
-name:                showdoom
+name:                hood
 version:             0.1.0.0
-homepage:            https://github.com/chfi/showdoom#readme
+homepage:            https://github.com/chfi/hood#readme
 license:             BSD3
 license-file:        LICENSE
 author:              Christian Fischer
@@ -26,7 +26,7 @@ library
       Doom.WAD.Types
   other-modules:
       Doom.UI
-      Paths_showdoom
+      Paths_hood
   default-language: Haskell2010
   ghc-options: -Wall -threaded
   default-extensions: NoImplicitPrelude OverloadedStrings GeneralizedNewtypeDeriving DeriveFunctor RecordWildCards
@@ -46,18 +46,12 @@ library
     , text >=1.2.2 && <1.3
     , binary >=0.8.3 && <0.9
 
-executable showdoom
-  other-modules:
-      Graphics.Buffer
-      Graphics.Doom
-      Graphics.Shader
-      Graphics.Texture
-  default-language: Haskell2010
-  default-extensions: NoImplicitPrelude OverloadedStrings GeneralizedNewtypeDeriving DeriveFunctor RecordWildCards
-  ghc-options: -Wall -threaded
+executable hood
+  main-is: Main.hs
   hs-source-dirs:
       app
-  main-is: Main.hs
+  default-extensions: NoImplicitPrelude OverloadedStrings GeneralizedNewtypeDeriving DeriveFunctor RecordWildCards
+  ghc-options: -Wall -threaded
   build-depends:
       base >=4.7 && <5
     , classy-prelude >=1.2
@@ -69,8 +63,14 @@ executable showdoom
     , linear
     , vector
     , errors
-    , showdoom
+    , hood
     , optparse-applicative >=0.13.2 && <0.14
     , gl >=0.8.0 && <0.9
     , GLFW-b >=1.4.8.1 && <1.5
     , JuicyPixels >=3.2.8.2 && <3.3
+  other-modules:
+      Graphics.Buffer
+      Graphics.Doom
+      Graphics.Shader
+      Graphics.Texture
+  default-language: Haskell2010

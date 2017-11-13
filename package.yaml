@@ -1,11 +1,11 @@
-name: showdoom
+name: hood
 version: '0.1.0.0'
 category: Games
 author: Christian Fischer
 maintainer: christian@chfi.se
 copyright: 2017 Christian Fischer
 license: BSD3
-homepage: https://github.com/chfi/showdoom#readme
+homepage: https://github.com/chfi/hood#readme
 
 extra-source-files:
 - README.md
@@ -53,11 +53,11 @@ library:
   - binary >=0.8.3 && <0.9
 
 executables:
-  showdoom:
+  hood:
     main: Main.hs
     source-dirs: app
     dependencies:
-    - showdoom
+    - hood
     - optparse-applicative >=0.13.2 && <0.14
     - gl >=0.8.0 && <0.9
     - GLFW-b >=1.4.8.1 && <1.5
