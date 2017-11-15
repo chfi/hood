@@ -6,6 +6,7 @@ import Data.Int (Int16)
 import Data.Word (Word16)
 import qualified Data.Vector as Vec
 import Linear.V2 (V2(..))
+import Linear.V3 (V3(..))
 import Doom.WAD.Types
 
 
@@ -72,3 +73,43 @@ buildMap RawMap{..} = do
   sidedefs <- sequence $ Vec.map (buildSidedef rawSectors) rawSidedefs
   ldefs <- sequence $ Vec.map (buildLinedef rawVertexes sidedefs) rawLinedefs
   pure $ DoomMap rawName ldefs
+
+
+
+getSectors' :: Vector (Linedef VertexNumber (Sidedef SectorNumber))
+            -> Vector (Vector (VertexNumber, VertexNumber, SectorNumber))
+getSectors' ldefs = Vec.fromList $ map (Vec.fromList) $ rs <> ls
+  where ldefs' = toList ldefs
+        rsides :: [(VertexNumber, VertexNumber, SectorNumber)]
+        rsides = map (\Linedef{..} -> (startVertex, endVertex, sector rightSidedef)) ldefs'
+        rs = groupBy (\(_,_,n1) (_,_,n2) -> n1 == n2) rsides
+        lsides = map (\Linedef{..} -> (startVertex, endVertex, sector leftSidedef)) ldefs'
+        ls = groupBy (\(_,_,n1) (_,_,n2) -> n1 == n2) lsides
+  -- sort linedefs by sectornumber
+
+
+
+buildSector :: Vector Vertex
+            -> Vector Sector
+            -> (Vector (VertexNumber, VertexNumber), SectorNumber)
+            -> Maybe (Vector (V3 Float), Sector)
+buildSector verts secs (vs, sn) = do
+  let mkPlane :: Float -> (VertexNumber, VertexNumber) -> Vector (V3 Float)
+      mkPlane z (v1, v2) = let (V2 x1 y1) = fromIntegral v1
+                               (V2 x2 y2) = fromIntegral v2
+                           in Vec.fromList [V3 x1 y1 z, V3 x2 y2 z]
+
+  sector <- secs `index` fromIntegral sn
+  let mkFloor :: (VertexNumber, VertexNumber) -> Vector (V3 Float)
+      mkFloor = mkPlane (fromIntegral (floorHeight sector))
+      mkCeil  = mkPlane (fromIntegral (ceilingHeight sector))
+
+
+  pure ((mkFloor =<< vs) <> (mkCeil =<< vs)
+       , sector)
+
+
+
+-- group linedefs by same sector??
+-- getSectors :: DoomMap -> Vector (Vector (V3 Float), Sector)
+-- getSectors DoomMap{..} =
