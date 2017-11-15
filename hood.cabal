@@ -70,6 +70,7 @@ executable hood
     , JuicyPixels >=3.2.8.2 && <3.3
   other-modules:
       Graphics.Buffer
+      Graphics.Camera
       Graphics.Doom
       Graphics.Shader
       Graphics.Texture
